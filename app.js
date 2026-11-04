@@ -9,8 +9,8 @@ const FILE='Bara3em_System_Final.xlsx';
 
 /* ---------------- الإعدادات (كانت في شيت «الإعدادات» في الإكسيل) ---------------- */
 const CONFIG={
- api:'https://script.google.com/macros/s/AKfycbzXSmbkgJL4GMfSkJCeZi-zononlJCcnyhvGNS2xml7K5I1oxO3sF2KmFR94sDoAakk/exec',                       // رابط Web App بتاع Google Apps Script (بينتهي بـ /exec)
- key:'Bra3em_Mina',                       // نفس كلمة KEY اللي في Code.gs
+ api:'https://script.google.com/macros/s/AKfycbyy8W0KpADyXaZnFK0j8F4X5XW2efz_YGJb4bnmCvQ8txw4xTGAdNBsfYFP3F5TZzk9/exec',                       // رابط Web App بتاع Google Apps Script (بينتهي بـ /exec)
+ key:'Mina_Bra3em',                       // نفس كلمة KEY اللي في Code.gs
  classes:['سوريال','غبريال','رفائيل','ميخائيل'],            // الفصول (الملائكة) — ماتغيّرش الأسماء بعد تسجيل الأطفال
  years:['سنة أولى','سنة تانية','سنة تالتة','سنة رابعة','سنة خامسة','سنة سادسة'],
  start:'2026-10-01',           // بداية العام الخدمي (YYYY-MM-DD)
@@ -81,9 +81,8 @@ async function flush(){
  if(flushing||!Q.length||!CONFIG.api)return;flushing=true;setSt();
  const ops=Q.slice(0,40);ops.forEach(o=>o.fl=1);
  try{const r=await post({ops});if(!r||!r.ok)throw Error((r&&r.err)||'bad');
-  let locked=0;r.results.forEach((x,i)=>{if(x.ok)applyLocal(ops[i]);else if(x.err==='locked')locked++});
+  r.results.forEach((x,i)=>{if(x.ok)applyLocal(ops[i])});
   Q=Q.filter(o=>!ops.includes(o));saveQ();saveSH();SERR='';flushing=false;build();setSt();const e=$('#rl');if(e)renderRec();
-  if(locked)alert('فيه '+locked+' تسجيل ما اتقبلوش لأن تاريخهم عدّى — الحضور بيتسجل في يومه بس.');
   if(Q.length)return flush()}
  catch(e){console.warn('flush',e);SERR=e.message;ops.forEach(o=>delete o.fl);flushing=false;setSt()}}
 // بيضيف الأطفال الجداد (اللي اتضافوا في الإكسيل) لتابات الحضور في جوجل شيت
@@ -160,20 +159,17 @@ const chips=(sel,pre,suf='')=>`<div class="chips">${D.classes.map((c,i)=>`<a hre
 const sw=(a,c)=>D.classes.includes(a)?a:D.classes[0];
 
 
-// التسجيل متاح لاجتماع النهارده بس — الأيام اللي فاتت مقفولة
-function autoAbsent(c,j){const d=dk(D.dates[j]);let ch=0;
- D.cls[c].ks.forEach(k=>{if(k.active&&k.att[j]===''){qAtt(k,d,'غ');ch=1}});if(ch){saveQ();build();flush()}}
 function recBody(){const {c,j}=RC,o=D.cls[c],ks=o.ks.filter(k=>k.active);
  const cn=v=>ks.filter(k=>k.att[j]===v).length,left=ks.length-cn('ح')-cn('غ')-cn('ع');
  return`<div class="card info"><span>حاضر: <b>${cn('ح')}</b></span><span>غائب: <b>${cn('غ')}</b></span><span>معتذر: <b>${cn('ع')}</b></span><span>لسه: <b>${left}</b></span></div><div class="rl">${ks.map(k=>`<div class="card rr ${k.g==='بنت'?'f':''}"><div class="av">${av(k)}</div><div class="rn"><b>${esc(k.name)}</b>${k.pd[j]?'<small>لسه ما اتبعتش لجوجل شيت</small>':''}<button class="b sm nb" data-note="${k.row}" aria-label="ملاحظة عن ${esc(k.name)}">${ic('note')}ملاحظة${k.pn.length?' ('+k.pn.length+')':''}</button></div><div class="seg" role="group" aria-label="حضور ${esc(k.name)}">${[['ح','ok','حاضر'],['غ','no','غائب'],['ع','ex','معتذر']].map(([v,cl,t])=>`<button class="sg ${cl}${k.att[j]===v?' on':''}" data-set="${v}" data-r="${k.row}" data-j="${j}" aria-pressed="${k.att[j]===v}" aria-label="${t}: ${esc(k.name)}">${v}</button>`).join('')}</div></div>`).join('')||`<div class="empty">${ic('users')}مفيش أطفال نشطين في الفصل ده</div>`}</div>`}
-const renderRec=()=>{const e=$('#rl');if(e&&RC.j>=0)e.innerHTML=recBody()};
+const renderRec=()=>{const e=$('#rl');if(e&&RC.j>=0)e.innerHTML=recBody();};
 const V={
-rec(a){const c=sw(a),j=D.tj;RC={c,j};
+rec(a){const c=sw(a);
+ const today=dayKey(),latest=D.dates.reduce((best,x,i)=>x<=iso2d(today)&&i>best?i:best,-1);
+ const selected=RC.j>=0?dk(D.dates[RC.j]):'',chosen=D.dates.findIndex(x=>dk(x)===selected),j=chosen>=0?chosen:(D.tj>=0?D.tj:latest);RC={c,j};
  const head=`<h2>${ic('check')}تسجيل الحضور</h2>${chips(c,'rec')}<div class="stb">${stBanner()}</div>`;
- if(j<0){const nx=D.dates.find(x=>dk(x)>dayKey());
-  return head+`<div class="card empty">${ic('lock')}<b>التسجيل مقفول النهارده</b><span>الحضور بيتسجّل في يوم الاجتماع بس (${esc(D.dayName)}).${nx?' الاجتماع الجاي: <b>'+fdl(nx)+'</b>':''}</span><span>الأيام اللي فاتت ماينفعش تتعدّل.</span></div>`}
- autoAbsent(c,j);
- return head+`<div class="tb"><span class="chip">${ic('calendar')}اجتماع النهارده: ${fdl(D.dates[j])}</span></div><p class="sub" style="margin-bottom:12px">كل الأطفال بيتسجلوا غايبين تلقائي، وانت دوس ح لمن حضر أو ع للمعتذر. بيتحفظ فورًا في جوجل شيت. دوسة تانية على نفس الحرف بتمسحه. التسجيل متاح النهارده بس — الأيام اللي فاتت مقفولة.</p><div id="rl">${recBody()}</div>`},
+ if(j<0)return head+`<div class="card empty">${ic('calendar')}<b>مفيش مواعيد اجتماعات مسجلة</b></div>`;
+ return head+`<div class="tb"><label for="rd">${ic('calendar')}تاريخ الاجتماع</label><select id="rd">${D.dates.map((x,i)=>`<option value="${i}" ${i===j?'selected':''}>${fdl(x)}${x.getUTCDay()===5?' — الجمعة':''}</option>`).join('')}</select></div><p class="sub" style="margin-bottom:12px">اختار تاريخ الاجتماع، وبعدها سجّل كل طفل: ح حاضر، غ غائب، ع معتذر. التغييرات تتحفظ فورًا في جوجل شيت. اختيار التاريخ وحده لا يغيّر أي تسجيل.</p><div id="rl">${recBody()}</div>`},
 home(){const a=D.kids.filter(k=>k.active),P=D.kids.reduce((s,k)=>s+k.P,0),Ab=D.kids.reduce((s,k)=>s+k.A,0),avg=P+Ab?P/(P+Ab):null;
  const st=[['users','المسجلين',D.kids.length],['checkc','النشطين',a.length],['user','أولاد',a.filter(k=>k.g==='ولد').length],['user','بنات',a.filter(k=>k.g==='بنت').length],['calendar','جمع مسجلة',D.meet],['alert','محتاجين افتقاد',D.kids.filter(k=>k.tier==3||k.tier==4).length,'warn']];
  let last=D.tot.map(x=>x.any).lastIndexOf(true);const mx=Math.max(1,...D.tot.map(x=>x.p));
@@ -253,7 +249,7 @@ $('#lk').onclick=lock;
 /* ---------------- التسجيل والملاحظات ---------------- */
 document.addEventListener('click',e=>{
  const s=e.target.closest('[data-set]');
- if(s){const k=D.kids.find(x=>x.row==s.dataset.r),j=+s.dataset.j;if(!k||j!==D.tj)return; // الأيام اللي فاتت مقفولة
+ if(s){const k=D.kids.find(x=>x.row==s.dataset.r),j=+s.dataset.j;if(!k||j!==RC.j)return;
   let v=s.dataset.set;if(k.att[j]===v)v='';qAtt(k,dk(D.dates[j]),v);saveQ();build();renderRec();flush();return}
  const an=e.target.closest('[data-addnote]');
  if(an){const k=D.kids.find(x=>x.row==an.dataset.addnote),t=$('#ntx').value.trim();if(!t){$('#ntx').focus();return}
@@ -262,6 +258,10 @@ document.addEventListener('click',e=>{
  if(dn){if(!confirm('تمسح الملاحظة دي؟'))return;const nid=dn.dataset.delnote,qi=Q.findIndex(o=>o.t==='note'&&o.nid===nid&&!o.fl);
   if(qi>=0)Q.splice(qi,1);else Q.push({t:'del',nid,ts:Date.now()});saveQ();build();openKid(dn.dataset.r,true);flush();return}
  if(e.target.closest('[data-retry]')){loadSheet().then(()=>{build();setSt();renderRec();syncKids();flush()})}
+});
+document.addEventListener('change',e=>{
+ if(e.target.id!=='rd')return;
+ const j=+e.target.value;if(Number.isInteger(j)&&D.dates[j]){RC.j=j;renderRec()}
 });
 document.addEventListener('click',e=>{const n=e.target.closest('[data-note]');if(n)openKid(n.dataset.note,false,true)});
 // أول ما ترجع للموقع بيجيب أحدث حضور وملاحظات (من غير ما يحمّل الإكسيل تاني)

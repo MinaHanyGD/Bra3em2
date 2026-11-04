@@ -194,16 +194,15 @@ function syncKids_(kids) {
 
 function applyOps_(ops, results) {
   const tabs = {};
-  const now = Date.now(), tod = today_();
+  const now = Date.now();
   let notes = null;
   ops.forEach(function (o) {
     try {
       if (o.t === 'att') {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(o.date)) || VALID.indexOf(o.v) < 0 || !o.id || !o.cls) throw new Error('bad');
-        // الحضور بيتسجّل في يومه بس: التاريخ = النهارده، أو التسجيل اتعمل على الجهاز في نفس اليوم ده (لو النت كان قاطع) وبعدها بأقل من 3 أيام
-        const ts = Number(o.ts) || now;
-        const sameDay = o.date === day_(ts) && ts <= now + 300000 && now - ts <= 3 * 864e5;
-        if (o.date !== tod && !sameDay) { results.push({ ok: false, err: 'locked' }); return; }
+        const date = String(o.date);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || VALID.indexOf(o.v) < 0 || !o.id || !o.cls) throw new Error('bad');
+        const parsedDate = new Date(date + 'T00:00:00Z');
+        if (isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) throw new Error('bad');
         const t = tabs[o.cls] || (tabs[o.cls] = loadTab_(o.cls));
         const c = col_(t, o.date);
         const r = row_(t, String(o.id).trim(), String(o.name || '').trim());
