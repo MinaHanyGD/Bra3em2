@@ -196,15 +196,17 @@ function renderKids(){const q=$('#q').value.trim().toLowerCase(),f=id=>$(id).val
 
 function openKid(row,again,fn){const k=D.kids.find(x=>x.row==row);if(!k)return;const t=TIER[k.tier],f=(a,b)=>b!==''&&b!=null?`<div><small>${a}</small><b>${b}</b></div>`:'';
  if(!again)lastFocus=document.activeElement;
+ const modal=$('#modal'),wasHidden=modal.hidden;
  $('#mc').innerHTML=`<div class="mh in"><div class="av ${k.g==='بنت'?'f':''}">${av(k)}</div><div><h2>${esc(k.name)}</h2><p class="meta">${k.id} · ${esc(k.cls)} · ${esc(k.year)}</p>${tag(t)}</div></div>
  <div class="kv">${f('حضور',k.P)+f('غياب',k.A)+f('بعذر',k.E)+f('النسبة',pc(k.pct))+f('غياب متتالي',k.streak)+f('آخر حضور',k.last?fdl(k.last):'—')+f('يروح لوحده؟',esc(k.alone))+f('النوع',k.g==='بنت'?'بنت':'ولد')}</div>
  ${k.addr?`<div class="mp">${ic('pin')}<span>${esc(k.addr)}</span><a class="b sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/${encodeURIComponent(k.addr)}">${ic('map')}الخريطة</a></div>`:''}
  ${k.notes?`<p class="mp">${ic('note')}<span>${esc(k.notes)}</span></p>`:''}<div style="display:flex;gap:6px;flex-wrap:wrap">${btns(k)}</div>
  <div class="nt"><h3>${ic('note')}ملاحظات جديدة</h3>${k.pn.map(n=>`<div class="pnote"><span class="d">${esc(n.date)}</span><span>${esc(n.text)}${n.pd?' <small class="sub">(لسه ما اتبعتتش)</small>':''}</span><button class="b sm" data-delnote="${n.id}" data-r="${k.row}" aria-label="حذف الملاحظة">${ic('close')}</button></div>`).join('')}<div class="addn"><input type="date" id="nd" value="${dayKey()}" aria-label="تاريخ الملاحظة"><textarea id="ntx" rows="2" placeholder="اكتب ملاحظة…" aria-label="الملاحظة"></textarea><button class="b pri" data-addnote="${k.row}">${ic('plus')}إضافة ملاحظة</button></div><p class="sub" style="margin-top:8px">بتتحفظ في تاب «الملاحظات» في جوجل شيت.</p></div>
  <div class="tl">${k.att.map((v,i)=>v?`<span class="${v==='ح'?'ok':v==='غ'?'no':'ex'}${k.pd[i]?' pd':''}">${fd(D.dates[i])} ${v}</span>`:'').join('')}</div>`;
- $('#modal').hidden=false;document.body.style.overflow='hidden';if(fn){const t=$('#ntx');t.scrollIntoView({block:'center'});t.focus()}else if(!again)$('#mx').focus()}
+ if(wasHidden){const state=history.state&&typeof history.state==='object'?history.state:{};history.pushState(Object.assign({},state,{__b3Modal:true}),'',location.href)}
+ modal.hidden=false;document.body.style.overflow='hidden';if(fn){const t=$('#ntx');t.scrollIntoView({block:'center'});t.focus()}else if(!again)$('#mx').focus()}
 
-const closeM=()=>{if($('#modal').hidden)return;$('#modal').hidden=true;document.body.style.overflow='';if($('#rl')){renderRec();return}if(lastFocus&&lastFocus.focus)lastFocus.focus()};
+const closeM=fromHistory=>{if($('#modal').hidden)return;const goBack=!fromHistory&&history.state&&history.state.__b3Modal;$('#modal').hidden=true;document.body.style.overflow='';if($('#rl'))renderRec();else if(lastFocus&&lastFocus.focus)lastFocus.focus();if(goBack)history.back()};
 
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.08});
 function fx(r=view){$$('.rv:not(.in)',r).forEach(e=>io.observe(e));
@@ -220,6 +222,7 @@ function init(){
  $('#dl').href=FILE;addEventListener('hashchange',route)}
 document.addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(o)openKid(o.dataset.open);if(e.target.id==='modal'||e.target.closest('#mx'))closeM()});
 addEventListener('keydown',e=>e.key==='Escape'&&closeM());
+addEventListener('popstate',()=>{if(!$('#modal').hidden)closeM(true)});
 
 async function boot(first){try{await load();if(first)init();route()}catch(e){view.innerHTML=`<div class="card empty" style="padding:34px">${ic('alert')}<h2 style="justify-content:center;margin:0">حصلت مشكلة</h2><p class="sub" style="line-height:2">${esc(e.message)}<br>لو بتفتح الملف من الكمبيوتر مباشرة (file://) لازم يتفتح من GitHub Pages أو سيرفر محلي.</p></div>`}$('#splash').classList.add('off')}
 /* ---------------- كلمة السر اليومية: (تاريخ اليوم)@Bra3em ---------------- */
