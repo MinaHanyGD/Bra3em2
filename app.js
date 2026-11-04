@@ -9,8 +9,8 @@ const FILE='Bara3em_System_Final.xlsx';
 
 /* ---------------- الإعدادات (كانت في شيت «الإعدادات» في الإكسيل) ---------------- */
 const CONFIG={
- api:'',                       // رابط Web App بتاع Google Apps Script (بينتهي بـ /exec)
- key:'',                       // نفس كلمة KEY اللي في Code.gs
+ api:'https://script.google.com/macros/s/AKfycbzXSmbkgJL4GMfSkJCeZi-zononlJCcnyhvGNS2xml7K5I1oxO3sF2KmFR94sDoAakk/exec',                       // رابط Web App بتاع Google Apps Script (بينتهي بـ /exec)
+ key:'Bra3em_Mina',                       // نفس كلمة KEY اللي في Code.gs
  classes:['سوريال','غبريال','رفائيل','ميخائيل'],            // الفصول (الملائكة) — ماتغيّرش الأسماء بعد تسجيل الأطفال
  years:['سنة أولى','سنة تانية','سنة تالتة','سنة رابعة','سنة خامسة','سنة سادسة'],
  start:'2026-10-01',           // بداية العام الخدمي (YYYY-MM-DD)
